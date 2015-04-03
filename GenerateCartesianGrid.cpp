@@ -61,7 +61,7 @@ std::vector<Point2> UniformCartesian(size_t Nx, size_t Ny)
         for (size_t j = 0; j < Ny; j++) {
             Point2 p = {i*hx - 1.0, j*hy - 1.0};
             auto const sp = SymmetryCoordinates::fromCartesian(p);
-            
+
             /*
                 Check if the point is within the Brillouin zone by using the
                 symmetry coordinates.

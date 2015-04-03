@@ -1,9 +1,21 @@
-#include <iostream>
 #include <cmath>
-#include "SymmetryCoordinates.hpp"
 
-int main()
-{
+#include "SymmetryCoordinates.hpp"
+#include "catch.hpp"
+
+TEST_CASE("Cartesian Coordinate Assignment", "[cartcoord][short]") {
+    SymmetryCoordinates::CartesianPoint2 p = {10.0, 242};
+    REQUIRE(p.x == 10.0);
+    REQUIRE(p.y == 242);
+}
+
+TEST_CASE("Symmetry Coordinate Assignment", "[symcoord][short]") {
+    SymmetryCoordinates::SymmetryPoint2 sp = {10.0, 242};
+    REQUIRE(sp.r == 10.0);
+    REQUIRE(sp.t == 242);
+}
+
+TEST_CASE("Symmetry Coordinates From Cartesian", "[symcoord][short]") {
     SymmetryCoordinates::CartesianPoint2 cp0 = {0, 1.0/std::sqrt(3)};
     SymmetryCoordinates::CartesianPoint2 cp1 = {1.0/3.0, 1.0/std::sqrt(3)};
     SymmetryCoordinates::CartesianPoint2 cp2 = {-1.0/3.0, 1.0/std::sqrt(3)};
@@ -14,10 +26,12 @@ int main()
     SymmetryCoordinates::SymmetryPoint2 sp2 = SymmetryCoordinates::fromCartesian(cp2);
     SymmetryCoordinates::SymmetryPoint2 sp3 = SymmetryCoordinates::fromCartesian(cp3);
 
-    std::cout << sp0.r << ", " << sp0.t << '\n';
-    std::cout << sp1.r << ", " << sp1.t << '\n';
-    std::cout << sp2.r << ", " << sp2.t << '\n';
-    std::cout << sp3.r << ", " << sp3.t << '\n';
-
-    return 0;
+    REQUIRE(sp0.r == Approx(1));
+    REQUIRE(sp0.t == Approx(0));
+    REQUIRE(sp1.r == Approx(1));
+    REQUIRE(sp1.t == Approx(M_PI / 6));
+    REQUIRE(sp2.r == Approx(1));
+    REQUIRE(sp2.t == Approx(M_PI / 6));
+    REQUIRE(sp3.r == Approx(1));
+    REQUIRE(sp3.t == Approx(M_PI / 6));
 }
