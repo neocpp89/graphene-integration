@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <set>
 #include <cmath>
 #include <cstdlib>
 
@@ -28,91 +27,87 @@ Point2 F(double rho, double theta, const double n = 6)
     return p;
 }
 
+std::vector<Point2> UniformRadialAndTheta(size_t num_radial, size_t num_theta)
+{
+    std::vector<Point2> output(num_radial*num_theta);
+
+    /*
+        Scan radially (outer) and angularly (inner) to create a uniform grid
+        in (r,theta). Note that the point density per area is not constant
+        when done this way.
+    */
+    const double rsqrt3 = 1.0 / std::sqrt(3.0);
+    for (size_t m = 0; m < num_radial; m++) {
+        const double rho = rsqrt3 * m / (num_radial-1);
+        for (size_t n = 0; n < num_theta; n++) {
+            const double theta = 2*M_PI * n/(num_theta-1);
+            output[m*num_theta + n] = F(rho, theta);
+        }
+    }
+
+    return output;
+}
+
+std::vector<Point2> UniformCartesian(size_t Nx, size_t Ny)
+{
+    std::vector<Point2> output;
+    output.reserve(Nx*Ny);
+
+    const double hx = 2.0 / (Nx-1);
+    const double hy = 2.0 / (Ny-1);
+
+    // Generate a cartesian grid a single point at a time
+    for (size_t i = 0; i < Nx; i++) {
+        for (size_t j = 0; j < Ny; j++) {
+            Point2 p = {i*hx - 1.0, j*hy - 1.0};
+            auto const sp = SymmetryCoordinates::fromCartesian(p);
+            
+            /*
+                Check if the point is within the Brillouin zone by using the
+                symmetry coordinates.
+            */
+            if (sp.r <= 1) {
+                output.push_back(p);
+            }
+        }
+    }
+
+    return output;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc < 3) {
-        std::cout << "Needs number of radial points and file to output.\n";
+    std::string outfile;
+    bool CartesianMode = true;
+    if (argc < 4) {
+        std::cout << argv[0] << ": OUTPUTFILE N M [type].\n";
+        std::cout << "    OUTPUTFILE - where to write points within Brillouin zone.\n";
+        std::cout << "    N - number of x points or radial points.\n";
+        std::cout << "    M - number of y points or theta points.\n";
+        std::cout << "    type - if 'R', use radial mode, otherwise use cartesian mode (default).\n";
         return 0;
+    } else {
+        if (argc >= 5) {
+            if (std::string(argv[4]) == std::string("R")) {
+                CartesianMode = false;
+            } else {
+                std::cout << "Unknown mode (leave blank for Cartesian).\n";
+            }
+        }
     }
-
-    
-
-    const size_t N = std::atoi(argv[1]);
-    const size_t M = N;
+    outfile = argv[1];
+    const size_t N = std::stoul(argv[2]);
+    const size_t M = std::stoul(argv[3]);
 
     std::vector<Point2> output;
-    output.reserve(M*N);
 
-    const double rsqrt3 = 1.0 / std::sqrt(3.0);
-
-    for (size_t m = 0; m < M; m++) {
-        const double rho = rsqrt3 * m / (M-1);
-        // const size_t num_theta_points = N*m/(M-1)+10;
-        const size_t num_theta_points = N;
-        for (size_t n = 0; n < num_theta_points; n++) {
-            const double theta = 2*M_PI * n/(num_theta_points-1);
-            // const double theta_off = 2*M_PI*static_cast<double>(std::rand()) / RAND_MAX;
-            output.push_back(F(rho, theta));
-        }
-    }
-#if 0
-
-    for (size_t n = 0; n < N; n++) {
-        for (size_t m = 0; m < M; m++) {
-            Point2 p;
-            p.x = (m)*(n)/(3.0*(M-1)*(N-1));
-            p.y = rsqrt3*m/(M-1);
-            output[n*M + m] = p;
-        }
+    if (CartesianMode) {
+        output = UniformCartesian(N, M);
+    } else {
+        output = UniformRadialAndTheta(N, M);
     }
 
-    /*
-    std::ofstream fout(argv[argc-1]);
-    for (size_t n = 0; n < N; n++) {
-        for (size_t m = 0; m < M; m++) {
-            fout << output[n*M + m].x << ' '<< output[n*M + m].y << '\n';
-        }
-    }
-    */
-
-    std::vector<Point2> fulloutput = output;
-    fulloutput.reserve(12*M*N);
-
-    // mirror original data across the y axis
-    for (size_t n = 1; n < N; n++) {
-        for (size_t m = 0; m < M; m++) {
-            Point2 p;
-            p.x = -output[n*M + m].x;
-            p.y = output[n*M + m].y;
-            fulloutput.push_back(p);
-        }
-    }
-
-    // rotate wedge through all 6 angles
-    for (size_t n = 1; n < N; n++) {
-        for (size_t m = 0; m < M; m++) {
-            Point2 p;
-            p.x = -output[n*M + m].x;
-            p.y = output[n*M + m].y;
-            double t = std::atan2(p.y, p.x);
-            fulloutput.push_back(p);
-        }
-    }
-
-    std::ofstream fout(argv[argc-1]);
-    /*
-    for (size_t i = 0; i < fulloutput.size(); i++) {
-        fout << fulloutput[i].x << ' '<< fulloutput[i].y << '\n';
-    }
-    */
-
-    std::set<Point2> s(fulloutput.begin(), fulloutput.end());
-
-    for (auto const &item : s) {
-        fout << item.x << ' '<< item.y << '\n';
-    }
-#endif
-    std::ofstream fout(argv[argc-1]);
+    std::ofstream fout(outfile);
     for (auto const &item : output) {
         fout << item.x << ' '<< item.y << '\n';
     }
