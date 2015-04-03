@@ -1,5 +1,6 @@
 #ifndef SYMMETRYCOORDINATES
 #define SYMMETRYCOORDINATES
+#include <iostream>
 #include <cmath>
 
 namespace SymmetryCoordinates {
@@ -37,6 +38,12 @@ CartesianPoint2 operator+(const CartesianPoint2 &a, const CartesianPoint2 &b)
 {
     CartesianPoint2 cp = {a.x+b.y, a.y+b.y};
     return cp;
+}
+
+std::ostream &operator<<(std::ostream &os, const CartesianPoint2 &p)
+{
+    os << p.x << ", " << p.y;
+    return os;
 }
 
 struct SymmetryPoint2 {
@@ -78,7 +85,7 @@ double calculateRho(const CartesianPoint2 &cp, const double theta)
 
 double calculateRho(const CartesianPoint2 &cp)
 {
-    return calculateRho(cp, std::cos(calculateTheta(cp)));
+    return calculateRho(cp, calculateTheta(cp));
 }
 
 
