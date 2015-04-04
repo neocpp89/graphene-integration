@@ -132,17 +132,17 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
     std::vector<double> tau_inv_branch(num_w);
 
     for (size_t j = 0; j < num_w; j++) {
-            const double w = w_functions[j](qsym.r, qsym.t);
+            const double w = 1e12 * w_functions[j](qsym.r, qsym.t);
             tau_inv_branch[j] = 0;
     for (size_t k = 0; k < num_w; k++) {
     for (size_t l = 0; l < num_w; l++) {
         std::vector<SymmetryCoordinates::CartesianPoint2> scurve;
         std::vector<SymmetryCoordinates::CartesianPoint2> gradient;
         scurve.reserve(curve.size());
-        const double tol = 1e-1;
+        const double tol = 1e11;
         for (size_t i = 0; i < curve.size(); i++) {
-            const double w_prime = w_functions[k](curvesym[i].r, curvesym[i].t);
-            const double w_doubleprime = w_functions[l](inpsym[i].r, inpsym[i].t);
+            const double w_prime = 1e12 * w_functions[k](curvesym[i].r, curvesym[i].t);
+            const double w_doubleprime = 1e12 * w_functions[l](inpsym[i].r, inpsym[i].t);
             if (splitting) {
                 double delta_w = w - w_prime - w_doubleprime;
                 if (std::fabs(delta_w) < tol) {
@@ -182,7 +182,7 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
     }
 
     for (auto &tau_inv : tau_inv_branch) {
-        tau_inv *= GRAPHENE_DENSITY*(4 * M_PI * M_PI / (LATTICE_A * LATTICE_A));
+        tau_inv *= PLANCK_CONSTANT * (8 * M_PI * M_PI * M_PI / (GRAPHENE_DENSITY * LATTICE_A * LATTICE_A * LATTICE_A));
     }
     return tau_inv_branch;
 }
