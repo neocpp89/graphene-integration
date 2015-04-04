@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -94,7 +95,6 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
     std::vector<SymmetryCoordinates::CartesianPoint2> curve = CalculateQPrime<splitting>(q, coord);
     std::vector<SymmetryCoordinates::CartesianPoint2> inp = CalculateQDoublePrime<splitting>(q, curve);
 
-
     const double hexagon_area = (3.0 * sqrt(3.0) / 2.0) * (2.0 / 3.0) * (2.0 / 3.0);
     const double dqA = hexagon_area / coord.size();
     const double dqx = sqrt(dqA) ;
@@ -120,65 +120,41 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
     double (*w_functions[])(double, double) = {
         w1, w2, w3, w4, w5, w6
     };
-
-    /*
-    fadbad::F<double> (*w_fad_functions[])(fadbad::F<double>, fadbad::F<double>) = {
-        w1, w2, w3, w4, w5, w6
-    };
-    */
-
     const size_t num_w = sizeof(w_functions)/sizeof(w_functions[0]);
 
-    std::vector<double> tau_inv_branch(num_w);
+    std::vector<double> tau_inv_branch(num_w, 0);
 
-    for (size_t j = 0; j < num_w; j++) {
+    const double tol = 1e11;
+    for (size_t i = 0; i < curve.size(); i++) {
+        for (size_t j = 0; j < num_w; j++) {
             const double w = 1e12 * w_functions[j](qsym.r, qsym.t);
-            tau_inv_branch[j] = 0;
-    for (size_t k = 0; k < num_w; k++) {
-    for (size_t l = 0; l < num_w; l++) {
-        std::vector<SymmetryCoordinates::CartesianPoint2> scurve;
-        std::vector<SymmetryCoordinates::CartesianPoint2> gradient;
-        scurve.reserve(curve.size());
-        const double tol = 1e11;
-        for (size_t i = 0; i < curve.size(); i++) {
-            const double w_prime = 1e12 * w_functions[k](curvesym[i].r, curvesym[i].t);
-            const double w_doubleprime = 1e12 * w_functions[l](inpsym[i].r, inpsym[i].t);
-            if (splitting) {
-                double delta_w = w - w_prime - w_doubleprime;
-                if (std::fabs(delta_w) < tol) {
-                    scurve.push_back(curve[i]);
-                    tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NSplitting(w, w_prime);
-                }
-            } else {
-                double delta_w = w + w_prime - w_doubleprime;
-                if (std::fabs(delta_w) < tol) {
-                    scurve.push_back(curve[i]);
-                    tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NCombining(w, w_prime);
-                }
-            }
-        }
+            for (size_t k = 0; k < num_w; k++) {
+                const double w_prime = 1e12 * w_functions[k](curvesym[i].r, curvesym[i].t);
+                for (size_t l = 0; l < num_w; l++) {
+                    const double w_doubleprime = 1e12 * w_functions[l](inpsym[i].r, inpsym[i].t);
+                    if (splitting) {
+                        double delta_w = w - w_prime - w_doubleprime;
+                        if (std::fabs(delta_w) < tol) {
+                            tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NSplitting(w, w_prime);
+                        }
+                    } else {
+                        double delta_w = w + w_prime - w_doubleprime;
+                        if (std::fabs(delta_w) < tol) {
+                            tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NCombining(w, w_prime);
+                        }
+                    }
 
-        std::cout << "Finished (" << j << ", " << k << ", " << l << ")";
-        if (scurve.size() > 0) {
-            std::cout << ' ' << scurve.size() << " points found.\n";
-            std::string filename("output/scurve");
-            std::ofstream foutsc(filename+std::to_string(j)+std::to_string(k)+std::to_string(l));
-            for (auto const &cp : scurve) {
-                foutsc << cp.x << ' ' << cp.y << '\n';
+                    /*
+                    std::cout << "Finished (" << j << ", " << k << ", " << l << ")";
+                    if (scurve.size() > 0) {
+                        std::cout << ' ' << scurve.size() << " points found.\n";
+                    } else {
+                        std::cout << ".\n";
+                    }
+                    */
+                }
             }
-            std::ofstream foutgrad(filename+"grad"+std::to_string(j)+std::to_string(k)+std::to_string(l));
-            for (auto const &grad : gradient) {
-                const double t = grad.y;
-                const double r = grad.x;
-                const double x = r*std::cos(t);
-                const double y = r*std::sin(t);
-                foutgrad << x << ' ' << y << '\n';
-            }
-        } else {
-            std::cout << ".\n";
         }
-    }
-    }
     }
 
     for (auto &tau_inv : tau_inv_branch) {
