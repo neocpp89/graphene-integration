@@ -8,7 +8,7 @@
 #include "SymmetryCoordinates.hpp"
 #include "Interpolations.hpp"
 
-const double velocity = 22e3; // m/s
+const double velocity = 2.2e4; // m/s
 const double temperature = 300;
 
 int main(int argc, char **argv)
@@ -29,7 +29,16 @@ int main(int argc, char **argv)
         qgrid.push_back(cp);
         std::array<double, NUMBER_OF_BRANCHES> tau_branch;
         for (size_t j = 0; j < tau_branch.size(); j++) {
-            ifs >> tau_branch[j];
+            double tau_inv;
+            ifs >> tau_inv;
+            if (std::isinf(tau_inv)) {
+                tau_branch[j] = 0;
+            } else {
+                tau_branch[j] = 1.0 / tau_inv;
+            }
+            if (tau_inv == 0) {
+                std::cout << "Warning, zero tau_inv for point (" << cp.x << ", " << cp.y << ").\n";
+            }
         }
         taugrid.push_back(tau_branch);
     }
@@ -38,9 +47,9 @@ int main(int argc, char **argv)
         w1, w2, w3, w4, w5, w6
     };
 
-    // hack to estimate contribution from each q point (use area fraction)
+    // hack to estimate contribution from each q point (use area fraction for IBZ)
     const double hexagon_area = (3.0 * sqrt(3.0) / 2.0) * (2.0 / 3.0) * (2.0 / 3.0);
-    const double dqA = hexagon_area / qgrid.size();
+    const double dqA = hexagon_area / (12.0 * qgrid.size());
 
     double thermal_conductivity = 0;
     for (size_t i = 0; i < qgrid.size(); i++) {
@@ -51,7 +60,13 @@ int main(int argc, char **argv)
             const double f = PLANCK_CONSTANT * ws / (BOLTZMANN_CONSTANT * temperature);
             const double g = exp(f) / ((exp(f) - 1) * (exp(f) - 1));
             const double magq = std::sqrt(q.x*q.x + q.y*q.y);
-            thermal_conductivity += PLANCK_CONSTANT*ws*velocity*taugrid[i][j]*g*magq;
+            thermal_conductivity += PLANCK_CONSTANT*ws*velocity*taugrid[i][j]*g*magq*dqA;
+            if (thermal_conductivity < 0) {
+                std::cout << "Thermal conductivity can't be negative.\n";
+                std::cout << q.x << ' ' << q.y << '\n';
+                std::cout << ws << ' ' << f << ' ' << g << ' ' << magq << ' ' << taugrid[i][j];
+                return 0;
+            }
         }
     }
 

@@ -30,7 +30,7 @@ Real NSplitting(Real w, Real w_prime, Real temperature = 300)
     const Real factor = PLANCK_CONSTANT * 2 * M_PI / (BOLTZMANN_CONSTANT * temperature);
     Real x = w;
     Real x_prime = w_prime;
-    return (1 + PlanckDistribution(x) + PlanckDistribution(x - x_prime));
+    return (1 + PlanckDistribution(factor*x) + PlanckDistribution(factor*(x - x_prime)));
 }
 
 template <typename Real>
@@ -39,7 +39,7 @@ Real NCombining(Real w, Real w_prime, Real temperature = 300)
     const Real factor = PLANCK_CONSTANT * 2 * M_PI / (BOLTZMANN_CONSTANT * temperature);
     Real x = w;
     Real x_prime = w_prime;
-    return (PlanckDistribution(x) - PlanckDistribution(x + x_prime));
+    return (PlanckDistribution(factor*x) - PlanckDistribution(factor*(x + x_prime)));
 }
 
 template <bool splitting>
@@ -234,7 +234,11 @@ int main(int argc, char **argv)
     std::ofstream ofs(filename);
     ofs << q.x << ' ' << q.y;
     for (auto tau_inv: tau_inv_branch) {
-        ofs << ' ' << tau_inv;
+        if (std::isinf(tau_inv)) {
+            ofs << ' ' << 1e300;
+        } else {
+            ofs << ' ' << tau_inv;
+        }
     }
 
     return 0;
