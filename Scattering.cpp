@@ -7,6 +7,7 @@
 
 #include "fadiff.h"
 #include "SymmetryCoordinates.hpp"
+#include "PhysicalConstants.hpp"
 #include "Interpolations.hpp"
 
 

@@ -1,13 +1,16 @@
 # Project: Graphene Integration.
 CXXFLAGS = -fno-omit-frame-pointer -g -O3 -march=native --std=c++11
 .PHONY: clean
-all: gengrid scattering unit
+all: gengrid scattering integrate unit
 
 
 gengrid: GenerateCartesianGrid.o
 	$(CXX) -o $@ $(CXXFLAGS) $^
 
 scattering: Scattering.o
+	$(CXX) -o $@ $(CXXFLAGS) $^
+
+integrate: CalculateThermalConductivity.o
 	$(CXX) -o $@ $(CXXFLAGS) $^
 
 TESTS = TestSymmetryCoordinates.o
