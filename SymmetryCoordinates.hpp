@@ -9,16 +9,46 @@ struct CartesianPoint2 {
     double x;
     double y;
 
-    friend bool operator==(const CartesianPoint2 &a, const CartesianPoint2 &b);
+    bool operator==(const CartesianPoint2 &b)
+    {
+        return (x == b.x && y == b.y);
+    }
+
+    bool operator!=(const CartesianPoint2 &b)
+    {
+        return !(*this == b);
+    }
+
+    CartesianPoint2 &operator-=(const CartesianPoint2 &b)
+    {
+        auto &a = *this;
+        a.x -= b.x;
+        a.y -= b.y;
+        return a;
+    }
+
+    CartesianPoint2 &operator+=(const CartesianPoint2 &b)
+    {
+        auto &a = *this;
+        a.x += b.x;
+        a.y += b.y;
+        return a;
+    }
+
+    CartesianPoint2 operator-(const CartesianPoint2 &b) const
+    {
+        auto a = *this;
+        return (a -= b);
+    }
+
+    CartesianPoint2 operator+(const CartesianPoint2 &b) const
+    {
+        auto a = *this;
+        return (a += b);
+    }
+
     friend bool operator<(const CartesianPoint2 &a, const CartesianPoint2 &b);
-    friend CartesianPoint2 operator-(const CartesianPoint2 &a, const CartesianPoint2 &b);
-    friend CartesianPoint2 operator+(const CartesianPoint2 &a, const CartesianPoint2 &b);
-
 };
-
-bool operator==(const CartesianPoint2 &a, const CartesianPoint2 &b) {
-    return (a.x == b.x && a.y == b.y);
-}
 
 bool operator<(const CartesianPoint2 &a, const CartesianPoint2 &b) {
     if (a.x == b.x) {
@@ -26,18 +56,6 @@ bool operator<(const CartesianPoint2 &a, const CartesianPoint2 &b) {
     } else {
         return (a.x < b.x);
     }
-}
-
-CartesianPoint2 operator-(const CartesianPoint2 &a, const CartesianPoint2 &b)
-{
-    CartesianPoint2 cp = {a.x-b.x, a.y-b.y};
-    return cp;
-}
-
-CartesianPoint2 operator+(const CartesianPoint2 &a, const CartesianPoint2 &b)
-{
-    CartesianPoint2 cp = {a.x+b.y, a.y+b.y};
-    return cp;
 }
 
 std::ostream &operator<<(std::ostream &os, const CartesianPoint2 &p)

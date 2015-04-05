@@ -35,3 +35,20 @@ TEST_CASE("Symmetry Coordinates From Cartesian", "[symcoord][short]") {
     REQUIRE(sp3.r == Approx(1));
     REQUIRE(sp3.t == Approx(M_PI / 6));
 }
+
+TEST_CASE("Cartesian Coordinate Operators", "[cartcoord][short]") {
+    SymmetryCoordinates::CartesianPoint2 p = {10.0, 242};
+    SymmetryCoordinates::CartesianPoint2 p2 = {10.0, 242};
+    SymmetryCoordinates::CartesianPoint2 q = {103.0, 12};
+
+    REQUIRE(p == p2);
+    REQUIRE(p != q);
+
+    auto sum = p+q;
+    REQUIRE(sum.x == Approx(113.0));
+    REQUIRE(sum.y == Approx(254.0));
+
+    auto diff = p-q;
+    REQUIRE(diff.x == Approx(-93.0));
+    REQUIRE(diff.y == Approx(230.0));
+}
