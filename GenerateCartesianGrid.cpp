@@ -6,7 +6,7 @@
 
 #include "SymmetryCoordinates.hpp"
 
-using Point2 = SymmetryCoordinates::CartesianPoint2;
+using Point2 = SymmetryCoordinates::CartesianPoint2<double>;
 
 Point2 reflect(const Point2 &p, double theta)
 {
