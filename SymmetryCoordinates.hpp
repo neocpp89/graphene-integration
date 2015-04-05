@@ -51,7 +51,7 @@ struct SymmetryPoint2 {
     double t;
 };
 
-constexpr double L = std::sqrt(3.0);
+const double L = std::sqrt(3.0);
 
 double calculateTheta(const CartesianPoint2 &cp);
 double calculateRho(const CartesianPoint2 &cp, const double theta);

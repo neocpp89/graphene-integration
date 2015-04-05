@@ -28,7 +28,7 @@ Real PlanckDistribution(Real x)
 template <typename Real>
 Real NSplitting(Real w, Real w_prime, Real temperature = 300)
 {
-    const Real factor = PLANCK_CONSTANT * 2 * M_PI / (BOLTZMANN_CONSTANT * temperature);
+    const Real factor = PLANCK_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
     Real x = w;
     Real x_prime = w_prime;
     return (1 + PlanckDistribution(factor*x) + PlanckDistribution(factor*(x - x_prime)));
@@ -37,7 +37,7 @@ Real NSplitting(Real w, Real w_prime, Real temperature = 300)
 template <typename Real>
 Real NCombining(Real w, Real w_prime, Real temperature = 300)
 {
-    const Real factor = PLANCK_CONSTANT * 2 * M_PI / (BOLTZMANN_CONSTANT * temperature);
+    const Real factor = PLANCK_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
     Real x = w;
     Real x_prime = w_prime;
     return (PlanckDistribution(factor*x) - PlanckDistribution(factor*(x + x_prime)));
@@ -122,9 +122,17 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
     };
     const size_t num_w = sizeof(w_functions)/sizeof(w_functions[0]);
 
+    // Initialize sums with zero
     std::vector<double> tau_inv_branch(num_w, 0);
 
-    const double tol = 1e11;
+    // Large tolerance because omega is in the terahertz range.
+    const double reltol = 1e-1;
+    const double tol = 1e12*reltol;
+
+    // For each point which has a q' and q'', calculate omega, omega',
+    // and omega''. If the combination for a splitting or combining process is
+    // within the tolerance, we consider that an intersection and add the
+    // contribution to tau inverse.
     for (size_t i = 0; i < curve.size(); i++) {
         for (size_t j = 0; j < num_w; j++) {
             const double w = 1e12 * w_functions[j](qsym.r, qsym.t);
@@ -132,33 +140,38 @@ std::vector<double> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoin
                 const double w_prime = 1e12 * w_functions[k](curvesym[i].r, curvesym[i].t);
                 for (size_t l = 0; l < num_w; l++) {
                     const double w_doubleprime = 1e12 * w_functions[l](inpsym[i].r, inpsym[i].t);
+                    double delta_w = 0;
                     if (splitting) {
-                        double delta_w = w - w_prime - w_doubleprime;
-                        if (std::fabs(delta_w) < tol) {
-                            tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NSplitting(w, w_prime);
-                        }
+                        delta_w = w - w_prime - w_doubleprime;
                     } else {
-                        double delta_w = w + w_prime - w_doubleprime;
-                        if (std::fabs(delta_w) < tol) {
-                            tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*NCombining(w, w_prime);
-                        }
+                        delta_w = w + w_prime - w_doubleprime;
                     }
+                    if (fabs(delta_w) < tol) {
+                        double N = 0;
+                        if (splitting) {
+                            N = NSplitting(w, w_prime);
+                        } else {
+                            N = NCombining(w, w_prime);
+                        }
+                        tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*N;
 
-                    /*
-                    std::cout << "Finished (" << j << ", " << k << ", " << l << ")";
-                    if (scurve.size() > 0) {
-                        std::cout << ' ' << scurve.size() << " points found.\n";
-                    } else {
-                        std::cout << ".\n";
+                        if (N < 0) {
+                            std::cout << "splitting: " << splitting << '\n';
+                            std::cout << "w,w',w'': " << w << ',' << w_prime << ',' << w_doubleprime << '\n';
+                            std::cout << "N < 0: " << N << ", jkl = " << j << ',' << k << ',' << l << '\n'; 
+                        }
                     }
-                    */
                 }
             }
         }
     }
 
+    // We have to scale everything by these factors to get the units correct.
+    const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
     for (auto &tau_inv : tau_inv_branch) {
-        tau_inv *= PLANCK_CONSTANT * (8 * M_PI * M_PI * M_PI / (GRAPHENE_DENSITY * LATTICE_A * LATTICE_A * LATTICE_A));
+        const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * PLANCK_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
+        const double qscale = 2 * M_PI / LATTICE_A;
+        tau_inv *= f * qscale * qscale;
     }
     return tau_inv_branch;
 }

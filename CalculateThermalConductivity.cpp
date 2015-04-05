@@ -8,7 +8,7 @@
 #include "SymmetryCoordinates.hpp"
 #include "Interpolations.hpp"
 
-const double velocity = 2.2e4; // m/s
+const double velocity = 22e3; // m/s
 const double temperature = 300;
 
 int main(int argc, char **argv)
@@ -31,13 +31,13 @@ int main(int argc, char **argv)
         for (size_t j = 0; j < tau_branch.size(); j++) {
             double tau_inv;
             ifs >> tau_inv;
+            if (tau_inv < 1e-8) {
+                std::cout << "Warning, SMALL tau_inv for point (" << cp.x << ", " << cp.y << ").\n";
+            }
             if (std::isinf(tau_inv)) {
                 tau_branch[j] = 0;
             } else {
                 tau_branch[j] = 1.0 / tau_inv;
-            }
-            if (tau_inv == 0) {
-                std::cout << "Warning, zero tau_inv for point (" << cp.x << ", " << cp.y << ").\n";
             }
         }
         taugrid.push_back(tau_branch);
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
     // hack to estimate contribution from each q point (use area fraction for IBZ)
     const double hexagon_area = (3.0 * sqrt(3.0) / 2.0) * (2.0 / 3.0) * (2.0 / 3.0);
-    const double dqA = hexagon_area / (12.0 * qgrid.size());
+    const double dqA = hexagon_area / qgrid.size();
 
     double thermal_conductivity = 0;
     for (size_t i = 0; i < qgrid.size(); i++) {
