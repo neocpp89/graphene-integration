@@ -26,21 +26,21 @@ Real PlanckDistribution(Real x)
 }
 
 template <typename Real>
-Real NSplitting(Real w, Real w_prime, Real temperature = 300)
+Real NSplitting(Real w_prime, Real w_doubleprime, Real temperature = 300)
 {
-    const Real factor = PLANCK_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
-    Real x = w;
-    Real x_prime = w_prime;
-    return (1 + PlanckDistribution(factor*x) + PlanckDistribution(factor*(x - x_prime)));
+    const Real factor = DIRAC_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
+    const Real x_prime = factor*w_prime;
+    const Real x_doubleprime = factor*w_doubleprime;
+    return (1 + PlanckDistribution(x_prime) + PlanckDistribution(x_doubleprime));
 }
 
 template <typename Real>
-Real NCombining(Real w, Real w_prime, Real temperature = 300)
+Real NCombining(Real w_prime, Real w_doubleprime, Real temperature = 300)
 {
-    const Real factor = PLANCK_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
-    Real x = w;
-    Real x_prime = w_prime;
-    return (PlanckDistribution(factor*x) - PlanckDistribution(factor*(x + x_prime)));
+    const Real factor = DIRAC_CONSTANT / (BOLTZMANN_CONSTANT * temperature);
+    const Real x_prime = factor*w_prime;
+    const Real x_doubleprime = factor*w_doubleprime;
+    return (PlanckDistribution(x_prime) - PlanckDistribution(x_doubleprime));
 }
 
 template <bool splitting, typename Real>
@@ -149,9 +149,9 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
                     if (fabs(delta_w) < tol) {
                         Real N = 0;
                         if (splitting) {
-                            N = NSplitting(w, w_prime);
+                            N = NSplitting(w_prime, w_doubleprime);
                         } else {
-                            N = NCombining(w, w_prime);
+                            N = NCombining(w_prime, w_doubleprime);
                         }
                         tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*N;
 
@@ -185,20 +185,27 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         st = qsym.t;
         sr.diff(0,2);
         st.diff(1,2);
-        auto w = LATTICE_A*1e12*w_fad_functions[i](sr, st);
-        double dwdx = w.d(0) * cos(qsym.t) - qsym.r * w.d(1) * sin(qsym.t);
-        double dwdy = w.d(0) * sin(qsym.t) + qsym.r * w.d(1) * cos(qsym.t);
         /*
+        auto w = LATTICE_A*1e12*w_fad_functions[i](sr, st);
+        double polar_r = sqrt(q.x*q.x + q.y*q.y);
+        double polar_t = atan2(q.y, q.x);
+        double modk = SymmetryCoordinates::L * polar_r;
+        double dwdr = w.d(0) * cos(qsym.t / 2.0) - modk * w.d(1) * sin(qsym.t / 2.0);
+        double dwdt = w.d(1);
+        double dwdx = dwdr * cos(polar_t) - polar_r * dwdt * sin(polar_t);
+        double dwdy = dwdr * sin(polar_t) + polar_r * dwdt * cos(polar_t);
+        */
+        std::cout << sq.r.d(0) << ' ' << sq.r.d(1) << '\n';
+        std::cout << sq.t.d(0) << ' ' << sq.t.d(1) << '\n';
         auto w = LATTICE_A*1e12*w_fad_functions[i](sq.r, sq.t);
         double w0 = w_functions[i](qsym.r, qsym.t);
         double dwdx = w.d(0);
         double dwdy = w.d(1);
-        */
         std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
         std::cout << "velocity: " << std::sqrt(dwdx*dwdx + dwdy*dwdy) << '\n';
         auto &tau_inv = tau_inv_branch[i];
         const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
-        const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * PLANCK_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
+        const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * DIRAC_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
         const double qscale = 2 * M_PI / LATTICE_A;
         tau_inv *= f * qscale * qscale;
     }
