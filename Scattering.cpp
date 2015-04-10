@@ -207,7 +207,7 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
         const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * DIRAC_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
         const double qscale = 2 * M_PI / LATTICE_A;
-        tau_inv *= f * qscale * qscale;
+        tau_inv *= f * qscale * qscale * GRAPHENE_SAMPLE_LENGTH * GRAPHENE_SAMPLE_LENGTH;
     }
     return tau_inv_branch;
 }

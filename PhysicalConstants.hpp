@@ -10,6 +10,7 @@ const double CARBON_MASS = 1.994e-23; // kg
 const double LATTICE_A = 2.46e-10; // m
 const double GRUNEISEN_PARAMETER = 1.5; 
 const double GRAPHENE_THICKNESS = 3.4e-10; // m
+const double GRAPHENE_SAMPLE_LENGTH = 5e-6; // m
 
 const size_t NUMBER_OF_BRANCHES = 6;
 
