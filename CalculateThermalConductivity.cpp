@@ -13,7 +13,7 @@ const double temperature = 300;
 
 int main(int argc, char **argv)
 {
-    std::vector<SymmetryCoordinates::CartesianPoint2> qgrid;
+    std::vector<SymmetryCoordinates::CartesianPoint2<double>> qgrid;
     std::vector<std::array<double, NUMBER_OF_BRANCHES>> taugrid;
     if (argc < 1) {
         std::cout << argv[0] << ": TAUFILE1 [TAUFILE2 ... TAUFILEN]\n";
@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
     for (size_t i = 1; i < argc; i++) {
         std::ifstream ifs(argv[i]);
-        SymmetryCoordinates::CartesianPoint2 cp;
+        SymmetryCoordinates::CartesianPoint2<double> cp;
         ifs >> cp.x;
         ifs >> cp.y;
         qgrid.push_back(cp);
@@ -53,14 +53,15 @@ int main(int argc, char **argv)
 
     double thermal_conductivity = 0;
     for (size_t i = 0; i < qgrid.size(); i++) {
-        const SymmetryCoordinates::CartesianPoint2 &q = qgrid[i];
-        const SymmetryCoordinates::SymmetryPoint2 sp = SymmetryCoordinates::fromCartesian(q);
+        const SymmetryCoordinates::CartesianPoint2<double> &q = qgrid[i];
+        const SymmetryCoordinates::SymmetryPoint2<double> sp = SymmetryCoordinates::fromCartesian(q);
         for (size_t j = 0; j < NUMBER_OF_BRANCHES; j++) {
             const double ws = w_functions[j](sp.r, sp.t);
-            const double f = PLANCK_CONSTANT * ws / (BOLTZMANN_CONSTANT * temperature);
+            const double f = DIRAC_CONSTANT * ws / (BOLTZMANN_CONSTANT * temperature);
             const double g = exp(f) / ((exp(f) - 1) * (exp(f) - 1));
             const double magq = std::sqrt(q.x*q.x + q.y*q.y);
-            thermal_conductivity += PLANCK_CONSTANT*ws*velocity*taugrid[i][j]*g*magq*dqA;
+            thermal_conductivity += DIRAC_CONSTANT*ws*velocity*taugrid[i][j]*g*magq*dqA;
+            // thermal_conductivity += ws*ws*taugrid[i][j]*f*velocity*velocity*dqA;
             if (thermal_conductivity < 0) {
                 std::cout << "Thermal conductivity can't be negative.\n";
                 std::cout << q.x << ' ' << q.y << '\n';
@@ -71,6 +72,8 @@ int main(int argc, char **argv)
     }
 
     thermal_conductivity /= (4 * M_PI * BOLTZMANN_CONSTANT * temperature * temperature * GRAPHENE_THICKNESS);
+    thermal_conductivity *= GRAPHENE_SAMPLE_LENGTH * GRAPHENE_SAMPLE_LENGTH;
+    // thermal_conductivity *= (DIRAC_CONSTANT*DIRAC_CONSTANT) / (4 * M_PI * M_PI * BOLTZMANN_CONSTANT * temperature * temperature * GRAPHENE_THICKNESS);
     std::cout << thermal_conductivity;
 
     return 0;
