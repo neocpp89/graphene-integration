@@ -90,7 +90,7 @@ std::vector<SymmetryCoordinates::CartesianPoint2<Real>> CalculateQDoublePrime(co
 }
 
 template <bool splitting, typename Real>
-std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2<Real> &q, const std::vector<SymmetryCoordinates::CartesianPoint2<Real>> &coord)
+std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2<Real> &q, const std::vector<SymmetryCoordinates::CartesianPoint2<Real>> &coord, std::vector<Real> &velocity_branch)
 {
     auto curve = CalculateQPrime<splitting, Real>(q, coord);
     auto inp = CalculateQDoublePrime<splitting, Real>(q, curve);
@@ -185,26 +185,35 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         st = qsym.t;
         sr.diff(0,2);
         st.diff(1,2);
-        /*
+
         auto w = LATTICE_A*1e12*w_fad_functions[i](sr, st);
+        const double dwdrg = w.d(0);
+        const double dwdthetag = w.d(1);
         double polar_r = sqrt(q.x*q.x + q.y*q.y);
         double polar_t = atan2(q.y, q.x);
-        double modk = SymmetryCoordinates::L * polar_r;
-        double dwdr = w.d(0) * cos(qsym.t / 2.0) - modk * w.d(1) * sin(qsym.t / 2.0);
-        double dwdt = w.d(1);
+        const double rg = qsym.r;
+        const double thetag = qsym.t;
+        double modk = polar_r;
+        double dwdr = dwdrg * cos(thetag);
+        double dwdt = dwdrg * (-modk * sin(thetag)) + dwdthetag;
         double dwdx = dwdr * cos(polar_t) - polar_r * dwdt * sin(polar_t);
         double dwdy = dwdr * sin(polar_t) + polar_r * dwdt * cos(polar_t);
-        */
+
+        /*
         std::cout << sq.r.d(0) << ' ' << sq.r.d(1) << '\n';
         std::cout << sq.t.d(0) << ' ' << sq.t.d(1) << '\n';
         auto w = LATTICE_A*1e12*w_fad_functions[i](sq.r, sq.t);
         double w0 = w_functions[i](qsym.r, qsym.t);
         double dwdx = w.d(0);
         double dwdy = w.d(1);
+        */
         std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
         std::cout << "velocity: " << std::sqrt(dwdx*dwdx + dwdy*dwdy) << '\n';
         auto &tau_inv = tau_inv_branch[i];
-        const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
+        // const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
+        // const double velocity = std::sqrt(dwdx*dwdx + dwdy*dwdy);
+        const double velocity = std::sqrt(dwdrg*dwdrg + (dwdthetag*dwdthetag) / (modk*modk) - 2*sin(thetag)*dwdrg*dwdthetag);
+        velocity_branch[i] = velocity;
         const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * DIRAC_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
         const double qscale = 2 * M_PI / LATTICE_A;
         tau_inv *= f * qscale * qscale * GRAPHENE_SAMPLE_LENGTH * GRAPHENE_SAMPLE_LENGTH;
@@ -238,8 +247,9 @@ int main(int argc, char **argv)
     }
     std::cout << "Read " << coord.size() << " grid points.\n";
 
-    auto tau_inv_branch_splitting = IntegrateTauInverse<true, double>(q, coord);
-    auto tau_inv_branch_combining = IntegrateTauInverse<false, double>(q, coord);
+    std::vector<double> velocity_branch(6);
+    auto tau_inv_branch_splitting = IntegrateTauInverse<true, double>(q, coord, velocity_branch);
+    auto tau_inv_branch_combining = IntegrateTauInverse<false, double>(q, coord, velocity_branch);
 
     if (tau_inv_branch_combining.size() != tau_inv_branch_splitting.size()) {
         throw std::runtime_error("Size mismatch in processes.");
@@ -264,6 +274,10 @@ int main(int argc, char **argv)
         } else {
             ofs << ' ' << tau_inv;
         }
+    }
+
+    for (auto velocity: velocity_branch) {
+        ofs << ' ' << velocity;
     }
 
     return 0;

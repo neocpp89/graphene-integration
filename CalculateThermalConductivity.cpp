@@ -8,16 +8,16 @@
 #include "SymmetryCoordinates.hpp"
 #include "Interpolations.hpp"
 
-const double velocity = 22e3; // m/s
 const double temperature = 300;
 
 int main(int argc, char **argv)
 {
     std::vector<SymmetryCoordinates::CartesianPoint2<double>> qgrid;
     std::vector<std::array<double, NUMBER_OF_BRANCHES>> taugrid;
+    std::vector<std::array<double, NUMBER_OF_BRANCHES>> velgrid;
     if (argc < 1) {
         std::cout << argv[0] << ": TAUFILE1 [TAUFILE2 ... TAUFILEN]\n";
-        std::cout << "\tTAUFILE contains 8 space-separated values; qx qy tau1 ... tau6\n";
+        std::cout << "\tTAUFILE contains 8 space-separated values; qx qy tauinv1 ... tauinv6\n";
         return 0;
     }
 
@@ -44,9 +44,17 @@ int main(int argc, char **argv)
                 tau_branch[j] = 1.0 / tau_inv;
             }
         }
+
+        std::array<double, NUMBER_OF_BRANCHES> vel_branch;
+        for (size_t j = 0; j < vel_branch.size(); j++) {
+            double vel;
+            ifs >> vel;
+            vel_branch[j] = vel;
+        }
         if (add_branch) {
             qgrid.push_back(cp);
             taugrid.push_back(tau_branch);
+            velgrid.push_back(vel_branch);
         }
     }
 
@@ -64,6 +72,8 @@ int main(int argc, char **argv)
         const SymmetryCoordinates::CartesianPoint2<double> &q = qgrid[i];
         const SymmetryCoordinates::SymmetryPoint2<double> sp = SymmetryCoordinates::fromCartesian(q);
         for (size_t j = 0; j < NUMBER_OF_BRANCHES; j++) {
+            const double velocity = velgrid[i][j];
+
             const double ws = w_functions[j](sp.r, sp.t);
             const double f = DIRAC_CONSTANT * ws / (BOLTZMANN_CONSTANT * temperature);
             const double g = exp(f) / ((exp(f) - 1) * (exp(f) - 1));

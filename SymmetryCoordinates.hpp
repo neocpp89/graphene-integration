@@ -98,8 +98,20 @@ Real calculateTheta(const CartesianPoint2<Real> &cp)
         return 0;
     }
 
-    const Real theta= acos(cos(6.0*(acos(cp.x / magcp) + M_PI / 2.0))) / 6.0;
+    const Real regular_theta = acos(cp.x / magcp) + M_PI / 2.0;
+    const Real theta = acos(cos(6.0*(regular_theta))) / 6.0;
     return theta;
+    // const Real regular_theta_restrict = fmod(regular_theta, M_PI / 3.0);
+    /* 
+    Real regular_theta_restrict = regular_theta;
+    while (regular_theta_restrict < 0) { regular_theta_restrict += M_PI / 3.0; }
+    while (regular_theta_restrict >= M_PI / 3.0) { regular_theta_restrict -= M_PI / 3.0; }
+    if (regular_theta_restrict < M_PI / 6.0) {
+        return regular_theta_restrict;
+    } else {
+        return ((M_PI / 3.0) - regular_theta_restrict);
+    }
+    */
 }
 
 template <typename Real>
