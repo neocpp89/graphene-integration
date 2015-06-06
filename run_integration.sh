@@ -75,3 +75,7 @@ echo "Calculated thermal conductivity is $conductivity.";
 echo "qprime grid has $numqppts points." >> $outdir/info;
 echo "filtered q grid has $numqpts points." >> $outdir/info;
 echo "Calculated thermal conductivity is $conductivity." >> $outdir/info;
+
+mv $qgrid_filename $outdir/$qgrid_filename;
+mv $qprimegrid_filename $outdir/$qprimegrid_filename;
+mv ibz_$qgrid_filename $outdir/ibz_$qgrid_filename;
