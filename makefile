@@ -19,7 +19,8 @@ unit: catchmain.o $(TESTS)
 	$(CXX) -o $@ $(CXXFLAGS) $^
 
 clean:
-	rm gengrid scattering \
+	rm gengrid scattering integrate unit \
 	   	GenerateCartesianGrid.o \
+		CalculateThermalConductivity.o \
 	   	Scattering.o \
 		catchmain.o $(TESTS)
