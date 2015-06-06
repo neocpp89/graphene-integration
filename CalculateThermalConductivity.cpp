@@ -26,13 +26,17 @@ int main(int argc, char **argv)
         SymmetryCoordinates::CartesianPoint2<double> cp;
         ifs >> cp.x;
         ifs >> cp.y;
-        qgrid.push_back(cp);
         std::array<double, NUMBER_OF_BRANCHES> tau_branch;
+        bool add_branch = true;
         for (size_t j = 0; j < tau_branch.size(); j++) {
             double tau_inv;
             ifs >> tau_inv;
             if (tau_inv < 1e-8) {
-                std::cout << "Warning, SMALL tau_inv for point (" << cp.x << ", " << cp.y << ").\n";
+                std::cerr << "Warning, SMALL tau_inv for point (" << cp.x << ", " << cp.y << ").\n";
+            }
+            if (tau_inv == 0) {
+                std::cerr << "Warning, ZERO tau_inv for point (" << cp.x << ", " << cp.y << "), probably need to refine qprime. Discarding q point.\n";
+                add_branch = false;
             }
             if (std::isinf(tau_inv)) {
                 tau_branch[j] = 0;
@@ -40,7 +44,10 @@ int main(int argc, char **argv)
                 tau_branch[j] = 1.0 / tau_inv;
             }
         }
-        taugrid.push_back(tau_branch);
+        if (add_branch) {
+            qgrid.push_back(cp);
+            taugrid.push_back(tau_branch);
+        }
     }
 
     double (*w_functions[])(double, double) = {
