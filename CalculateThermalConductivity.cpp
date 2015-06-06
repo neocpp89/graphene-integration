@@ -21,7 +21,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    for (int = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         std::ifstream ifs(argv[i]);
         SymmetryCoordinates::CartesianPoint2<double> cp;
         ifs >> cp.x;
@@ -59,6 +59,7 @@ int main(int argc, char **argv)
     const double dqA = hexagon_area / qgrid.size();
 
     double thermal_conductivity = 0;
+    std::ofstream local_ofs("local_contributions");
     for (size_t i = 0; i < qgrid.size(); i++) {
         const SymmetryCoordinates::CartesianPoint2<double> &q = qgrid[i];
         const SymmetryCoordinates::SymmetryPoint2<double> sp = SymmetryCoordinates::fromCartesian(q);
@@ -67,7 +68,9 @@ int main(int argc, char **argv)
             const double f = DIRAC_CONSTANT * ws / (BOLTZMANN_CONSTANT * temperature);
             const double g = exp(f) / ((exp(f) - 1) * (exp(f) - 1));
             const double magq = std::sqrt(q.x*q.x + q.y*q.y);
-            thermal_conductivity += DIRAC_CONSTANT*ws*velocity*taugrid[i][j]*g*magq*dqA;
+            const double local_conductivity_value = DIRAC_CONSTANT*ws*velocity*taugrid[i][j]*g*magq;
+            local_ofs << q.x << ' ' << q.y << ' ' << local_conductivity_value << '\n';
+            thermal_conductivity += local_conductivity_value*dqA;
             // thermal_conductivity += ws*ws*taugrid[i][j]*f*velocity*velocity*dqA;
             if (thermal_conductivity < 0) {
                 std::cout << "Thermal conductivity can't be negative.\n";
