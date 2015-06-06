@@ -103,7 +103,7 @@ Real calculateTheta(const CartesianPoint2<Real> &cp)
 }
 
 template <typename Real>
-Real  calculateRho(const CartesianPoint2<Real> &cp, const Real theta)
+Real calculateRho(const CartesianPoint2<Real> &cp, const Real theta)
 {
     const Real magcp = sqrt(cp.x*cp.x + cp.y*cp.y);
     const Real rho = L * magcp * cos(theta);

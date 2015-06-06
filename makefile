@@ -1,5 +1,5 @@
 # Project: Graphene Integration.
-CXXFLAGS = -fno-omit-frame-pointer -g -O3 -march=native --std=c++11
+CXXFLAGS = -fno-omit-frame-pointer -g -O3 -march=native --std=c++11 -Wall -Wextra
 .PHONY: clean
 all: gengrid scattering integrate unit
 

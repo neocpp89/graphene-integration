@@ -21,7 +21,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    for (size_t i = 1; i < argc; i++) {
+    for (int = 1; i < argc; i++) {
         std::ifstream ifs(argv[i]);
         SymmetryCoordinates::CartesianPoint2<double> cp;
         ifs >> cp.x;
