@@ -50,7 +50,7 @@ calculate_scatterings() {
 ./gengrid $qgrid_filename $nq $mq;
 
 # filter q points to IBZ
-python FilterToIBZ.py $qgrid_filename > ibz_$qgrid_filename;
+python FilterToFiniteIBZ.py $qgrid_filename > ibz_$qgrid_filename;
 
 numqppts=`wc -l < $qprimegrid_filename`;
 echo $numqppts;
