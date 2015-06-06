@@ -207,12 +207,11 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         double dwdx = w.d(0);
         double dwdy = w.d(1);
         */
-        std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
-        std::cout << "velocity: " << std::sqrt(dwdx*dwdx + dwdy*dwdy) << '\n';
         auto &tau_inv = tau_inv_branch[i];
-        // const double velocity = 22e3; // m/s. Bit of a hack before I calculate actual velocities...
-        // const double velocity = std::sqrt(dwdx*dwdx + dwdy*dwdy);
-        const double velocity = std::sqrt(dwdrg*dwdrg + (dwdthetag*dwdthetag) / (modk*modk) - 2*sin(thetag)*dwdrg*dwdthetag);
+        const double velocity = SymmetryCoordinates::L * std::sqrt(dwdx*dwdx + dwdy*dwdy);
+        // const double velocity = SymmetryCoordinates::L * std::sqrt(dwdrg*dwdrg + (dwdthetag*dwdthetag) / (modk*modk) - 2*sin(thetag)*dwdrg*dwdthetag);
+        std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
+        std::cout << "velocity: " << velocity << '\n';
         velocity_branch[i] = velocity;
         const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * DIRAC_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
         const double qscale = 2 * M_PI / LATTICE_A;
