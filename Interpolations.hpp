@@ -423,9 +423,9 @@ r*(5074.598126561878 + r*(-2842.882411424578 +
 647.3913062477085*r)))))))))*sin(t);
     return w;
 }
-#define w1 w1_naive
-#define w2 w2_naive
-#define w3 w3_naive
-#define w4 w4_naive
-#define w5 w5_naive
-#define w6 w6_naive
+#define w1 w1_horner
+#define w2 w2_horner
+#define w3 w3_horner
+#define w4 w4_horner
+#define w5 w5_horner
+#define w6 w6_horner
