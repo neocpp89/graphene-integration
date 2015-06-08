@@ -14,7 +14,7 @@ scattering: Scattering.o
 integrate: CalculateThermalConductivity.o
 	$(CXX) -o $@ $(CXXFLAGS) $^
 
-TESTS = TestSymmetryCoordinates.o
+TESTS = TestSymmetryCoordinates.o TestInterpolationEvaluation.o
 
 unit: catchmain.o $(TESTS)
 	$(CXX) -o $@ $(CXXFLAGS) $^
