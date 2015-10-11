@@ -11,7 +11,6 @@
 #include "PhysicalConstants.hpp"
 #include "Interpolations.hpp"
 
-
 const size_t POINTS_HINT = 4000000;
 
 double delta(double arg, double sigma=10.0)
@@ -72,6 +71,63 @@ std::vector<SymmetryCoordinates::CartesianPoint2<Real>> CalculateQPrime(const Sy
     return curve;
 }
 
+template <typename Real>
+void domegadq(Real &xcomp, Real &ycomp, const SymmetryCoordinates::CartesianPoint2<Real> &q, const SymmetryCoordinates::SymmetryPoint2<Real> &qsym, fadbad::F<Real> (*fadfunc)(fadbad::F<Real>, fadbad::F<Real>))
+{
+    fadbad::F<double> sr,st;
+    sr = qsym.r;
+    st = qsym.t;
+    sr.diff(0,2);
+    st.diff(1,2);
+
+    auto w = LATTICE_A*1e12*fadfunc(sr, st);
+    const double dwdrg = w.d(0);
+    const double dwdthetag = w.d(1);
+    const double polar_r = sqrt(q.x*q.x + q.y*q.y);
+    const double polar_t = atan2(q.y, q.x);
+    const double rg = qsym.r;
+    const double thetag = qsym.t;
+    const double modk = polar_r;
+    const double dwdr = dwdrg * cos(thetag);
+    const double dwdt = dwdrg * (-modk * sin(thetag)) + dwdthetag;
+    const double dwdx = dwdr * cos(polar_t) - polar_r * dwdt * sin(polar_t);
+    const double dwdy = dwdr * sin(polar_t) + polar_r * dwdt * cos(polar_t);
+    xcomp = dwdx;
+    ycomp = dwdy;
+    return;
+}
+
+// q is the point to evaluate at, qprime = q - q_shift is the variable we differentiate against
+template <typename Real>
+void domegadq_shift(Real &xcomp, Real &ycomp, const SymmetryCoordinates::CartesianPoint2<Real> &q, const SymmetryCoordinates::CartesianPoint2<Real> &q_shift, fadbad::F<Real> (*fadfunc)(fadbad::F<Real>, fadbad::F<Real>))
+{
+    fadbad::F<double> sr,st;
+    auto qdiffsym = SymmetryCoordinates::fromCartesian(q - q_shift);
+    sr = qdiffsym.r;
+    st = qdiffsym.t;
+    sr.diff(0,2);
+    st.diff(1,2);
+    auto qsym = SymmetryCoordinates::fromCartesian(q);
+    sr = qsym.r;
+    st = qsym.t;
+
+    auto w = LATTICE_A*1e12*fadfunc(sr, st);
+    const double dwdrg = w.d(0);
+    const double dwdthetag = w.d(1);
+    const double polar_r = sqrt(q.x*q.x + q.y*q.y);
+    const double polar_t = atan2(q.y, q.x);
+    const double rg = qsym.r;
+    const double thetag = qsym.t;
+    const double modk = polar_r;
+    const double dwdr = dwdrg * cos(thetag);
+    const double dwdt = dwdrg * (-modk * sin(thetag)) + dwdthetag;
+    const double dwdx = dwdr * cos(polar_t) - polar_r * dwdt * sin(polar_t);
+    const double dwdy = dwdr * sin(polar_t) + polar_r * dwdt * cos(polar_t);
+    xcomp = dwdx;
+    ycomp = dwdy;
+    return;
+}
+
 template <bool splitting, typename Real>
 std::vector<SymmetryCoordinates::CartesianPoint2<Real>> CalculateQDoublePrime(const SymmetryCoordinates::CartesianPoint2<Real> &q, const std::vector<SymmetryCoordinates::CartesianPoint2<Real>> &qprime)
 {
@@ -121,6 +177,9 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         w1, w2, w3, w4, w5, w6
     };
     const size_t num_w = sizeof(w_functions)/sizeof(w_functions[0]);
+    fadbad::F<double> (*w_fad_functions[])(fadbad::F<double>, fadbad::F<double>) = {
+         w1, w2, w3, w4, w5, w6
+     };
 
     // Initialize sums with zero
     std::vector<double> tau_inv_branch(num_w, 0);
@@ -138,8 +197,17 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
             const Real w = 1e12 * w_functions[j](qsym.r, qsym.t);
             for (size_t k = 0; k < num_w; k++) {
                 const Real w_prime = 1e12 * w_functions[k](curvesym[i].r, curvesym[i].t);
+                double dwprimedqprimex = 0;
+                double dwprimedqprimey = 0;
+                domegadq(dwprimedqprimex, dwprimedqprimey, curve[i], curvesym[i], w_fad_functions[k]);
                 for (size_t l = 0; l < num_w; l++) {
                     const Real w_doubleprime = 1e12 * w_functions[l](inpsym[i].r, inpsym[i].t);
+                    double dwppdqprimex = 0;
+                    double dwppdqprimey = 0;
+                    domegadq_shift(dwppdqprimex, dwppdqprimey, inp[i], inp[i]-curve[i], w_fad_functions[l]);
+                    const double vgx = dwprimedqprimex - dwppdqprimex;
+                    const double vgy = dwprimedqprimey - dwppdqprimey;
+                    const double group_velocity = std::sqrt(vgx*vgx + vgy*vgy);
                     Real delta_w = 0;
                     if (splitting) {
                         delta_w = w - w_prime - w_doubleprime;
@@ -153,7 +221,7 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
                         } else {
                             N = NCombining(w_prime, w_doubleprime);
                         }
-                        tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*N;
+                        tau_inv_branch[j] += w*w_prime*w_doubleprime*dqA*N / group_velocity;
 
                         if (N < 0) {
                             std::cout << "splitting: " << splitting << '\n';
@@ -174,12 +242,9 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
     qy.diff(1,2);
     SymmetryCoordinates::CartesianPoint2<fadbad::F<double>> cq= {qx, qy};
     auto sq = SymmetryCoordinates::fromCartesian(cq);
-
-    fadbad::F<double> (*w_fad_functions[])(fadbad::F<double>, fadbad::F<double>) = {
-         w1, w2, w3, w4, w5, w6
-     };
    
     for (size_t i = 0; i < tau_inv_branch.size(); i++) { 
+        /*
         fadbad::F<double> sr,st;
         sr = qsym.r;
         st = qsym.t;
@@ -198,15 +263,12 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         double dwdt = dwdrg * (-modk * sin(thetag)) + dwdthetag;
         double dwdx = dwdr * cos(polar_t) - polar_r * dwdt * sin(polar_t);
         double dwdy = dwdr * sin(polar_t) + polar_r * dwdt * cos(polar_t);
-
-        /*
-        std::cout << sq.r.d(0) << ' ' << sq.r.d(1) << '\n';
-        std::cout << sq.t.d(0) << ' ' << sq.t.d(1) << '\n';
-        auto w = LATTICE_A*1e12*w_fad_functions[i](sq.r, sq.t);
-        double w0 = w_functions[i](qsym.r, qsym.t);
-        double dwdx = w.d(0);
-        double dwdy = w.d(1);
         */
+
+        double dwdx = 0;
+        double dwdy = 0;
+        domegadq(dwdx, dwdy, q, qsym, w_fad_functions[i]);
+
         auto &tau_inv = tau_inv_branch[i];
         const double velocity = SymmetryCoordinates::L * std::sqrt(dwdx*dwdx + dwdy*dwdy);
         // const double velocity = SymmetryCoordinates::L * std::sqrt(dwdrg*dwdrg + (dwdthetag*dwdthetag) / (modk*modk) - 2*sin(thetag)*dwdrg*dwdthetag);
