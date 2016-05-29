@@ -1,10 +1,13 @@
 #!/bin/bash
 
-prefix=A
+QLIST=$(seq 25 25 400)
+QPLIST=$(seq 25 25 400)
+
+prefix=B
 gridfile=${prefix}.scan
 echo -ne > $gridfile
-for q in $(seq 25 25 400); do
-    for qp in $(seq 25 25 400); do
+for q in $QLIST; do
+    for qp in $QPLIST; do
         qfile=${prefix}q${q}_qp${qp} 
         qpfile=${prefix}qp${qp}
         outputdir=${qfile}.output

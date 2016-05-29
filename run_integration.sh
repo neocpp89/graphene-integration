@@ -32,50 +32,49 @@ calculate_scatterings() {
     # $2 is the file containing the q-prime points
     q_grid="$1"
     qprime_grid="$2"
+    prefix="$3"
     if hash parallel 2>/dev/null; then
-        time parallel --slf machines.slf --eta --progress --colsep=' ' "cd $(pwd); ./scattering "$qprime_grid" {1} {2}"  :::: "$q_grid"
+        time parallel --slf machines.slf --eta --progress --colsep=' ' "cd $(pwd); ./scattering \"$qprime_grid\" {1} {2} \"$prefix\" "  :::: "$q_grid"
     else
         time while IFS='' read -r line
         do
             IFS=' ' read -a qp <<< "$line";
             qx="${qp[0]}"
             qy="${qp[1]}"
-            ./scattering "$qprime_grid" "$qx" "$qy";
+            ./scattering "$qprime_grid" "$qx" "$qy" "$prefix";
         done < "$q_grid";
     fi
 }
 
-# generate both grids across entire BZ
-./gengrid $qprimegrid_filename $nqprime $mqprime;
-./gengrid $qgrid_filename $nq $mq;
-
-# filter q points to IBZ
-python FilterToFiniteIBZ.py $qgrid_filename > ibz_$qgrid_filename;
-
-numqppts=`wc -l < $qprimegrid_filename`;
-echo $numqppts;
-echo "qprime grid has $numqppts points.";
-
-numqpts=`wc -l < ibz_$qgrid_filename`;
-echo $numqpts;
-echo "filtered q grid has $numqpts points.";
-
-mkdir output;
-calculate_scatterings ibz_$qgrid_filename $qprimegrid_filename;
 outdir=$qgrid_filename.output;
 while [ -d "$outdir" ]
 do
     outdir=$outdir.new;
 done
-mv output $outdir;
+prefix=$outdir/tauinv_q
 
-conductivity=`./integrate $outdir/*`;
+mkdir -p $outdir
+
+# generate both grids across entire BZ
+./gengrid $outdir/$qprimegrid_filename $nqprime $mqprime;
+./gengrid $outdir/$qgrid_filename $nq $mq;
+
+# filter q points to IBZ
+python FilterToFiniteIBZ.py $outdir/$qgrid_filename > $outdir/ibz_$qgrid_filename;
+
+numqppts=`wc -l < $outdir/$qprimegrid_filename`;
+echo $numqppts;
+echo "qprime grid has $numqppts points.";
+
+numqpts=`wc -l < $outdir/ibz_$qgrid_filename`;
+echo $numqpts;
+echo "filtered q grid has $numqpts points.";
+
+calculate_scatterings $outdir/ibz_$qgrid_filename $outdir/$qprimegrid_filename $prefix;
+
+conductivity=`./integrate ${prefix}*`;
 echo "Calculated thermal conductivity is $conductivity.";
 
 echo "qprime grid has $numqppts points." >> $outdir/info;
 echo "filtered q grid has $numqpts points." >> $outdir/info;
 echo "Calculated thermal conductivity is $conductivity." >> $outdir/info;
-
-mv $qgrid_filename $outdir/$qgrid_filename;
-mv $qprimegrid_filename $outdir/$qprimegrid_filename;
-mv ibz_$qgrid_filename $outdir/ibz_$qgrid_filename;

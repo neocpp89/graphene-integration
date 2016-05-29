@@ -85,7 +85,6 @@ void domegadq(Real &xcomp, Real &ycomp, const SymmetryCoordinates::CartesianPoin
     const double dwdthetag = w.d(1);
     const double polar_r = sqrt(q.x*q.x + q.y*q.y);
     const double polar_t = atan2(q.y, q.x);
-    const double rg = qsym.r;
     const double thetag = qsym.t;
     const double modk = polar_r;
     const double dwdr = dwdrg * cos(thetag);
@@ -116,7 +115,6 @@ void domegadq_shift(Real &xcomp, Real &ycomp, const SymmetryCoordinates::Cartesi
     const double dwdthetag = w.d(1);
     const double polar_r = sqrt(q.x*q.x + q.y*q.y);
     const double polar_t = atan2(q.y, q.x);
-    const double rg = qsym.r;
     const double thetag = qsym.t;
     const double modk = polar_r;
     const double dwdr = dwdrg * cos(thetag);
@@ -153,8 +151,6 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
 
     const double hexagon_area = (3.0 * sqrt(3.0) / 2.0) * (2.0 / 3.0) * (2.0 / 3.0);
     const double dqA = hexagon_area / coord.size();
-    const double dqx = sqrt(dqA) ;
-    const double dqy = dqx;
 
     auto qsym = SymmetryCoordinates::fromCartesian(q);
 
@@ -293,8 +289,8 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
 
 int main(int argc, char **argv)
 {
-    if (argc < 4) {
-        std::cout << argv[0] << ": GRIDFILE QX QY.\n";
+    if (argc < 5) {
+        std::cout << argv[0] << ": GRIDFILE QX QY OUTPUT-PREFIX.\n";
         return 0;
     }
     std::string infile(argv[1]);
@@ -304,7 +300,7 @@ int main(int argc, char **argv)
 
     std::vector<SymmetryCoordinates::CartesianPoint2<double>> coord;
     coord.reserve(POINTS_HINT);
-    std::ifstream fin(argv[1]);
+    std::ifstream fin(infile);
     while (true) {
         SymmetryCoordinates::CartesianPoint2<double> cp;
         fin >> cp.x;
@@ -333,7 +329,7 @@ int main(int argc, char **argv)
         std::cout << "tau_inv_branch[" << i << "] = " << tau_inv_branch[i] << '\n';
     }
 
-    std::string filename("output/q");
+    std::string filename(argv[4]);
     filename = filename+std::to_string(q.x)+'_'+std::to_string(q.y);
     std::ofstream ofs(filename);
     ofs << q.x << ' ' << q.y;
