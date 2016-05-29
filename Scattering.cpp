@@ -279,6 +279,14 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         const double qscale = 2 * M_PI / LATTICE_A;
         tau_inv *= f * qscale * qscale * GRAPHENE_SAMPLE_LENGTH * GRAPHENE_SAMPLE_LENGTH;
     }
+
+    for (size_t i = 0; i < tau_inv_branch.size(); i++) {
+        const double velocity = velocity_branch[i];
+        const double specularity = 0.9;
+        const double tau_boundary = (velocity / GRAPHENE_SAMPLE_LENGTH) * (1.0 - specularity) / (1.0 + specularity);
+        tau_inv_branch[i] += tau_boundary;
+    }
+
     return tau_inv_branch;
 }
 

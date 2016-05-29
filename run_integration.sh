@@ -33,7 +33,7 @@ calculate_scatterings() {
     q_grid="$1"
     qprime_grid="$2"
     if hash parallel 2>/dev/null; then
-        time parallel --progress --colsep=' ' ./scattering "$qprime_grid" {1} {2}  :::: "$q_grid"
+        time parallel --slf machines.slf --eta --progress --colsep=' ' "cd $(pwd); ./scattering "$qprime_grid" {1} {2}"  :::: "$q_grid"
     else
         time while IFS='' read -r line
         do
