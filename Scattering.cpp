@@ -268,8 +268,8 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
         auto &tau_inv = tau_inv_branch[i];
         const double velocity = SymmetryCoordinates::L * std::sqrt(dwdx*dwdx + dwdy*dwdy);
         // const double velocity = SymmetryCoordinates::L * std::sqrt(dwdrg*dwdrg + (dwdthetag*dwdthetag) / (modk*modk) - 2*sin(thetag)*dwdrg*dwdthetag);
-        std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
-        std::cout << "velocity: " << velocity << '\n';
+        // std::cout << "dwdq: (" << dwdx << ", " << dwdy << ")\n";
+        // std::cout << "velocity: " << velocity << '\n';
         velocity_branch[i] = velocity;
         const double f = (2 * GRUNEISEN_PARAMETER * GRUNEISEN_PARAMETER * DIRAC_CONSTANT) / (3 * M_PI * GRAPHENE_DENSITY * velocity * velocity);
         const double qscale = 2 * M_PI / LATTICE_A;
@@ -278,7 +278,7 @@ std::vector<Real> IntegrateTauInverse(const SymmetryCoordinates::CartesianPoint2
 
     for (size_t i = 0; i < tau_inv_branch.size(); i++) {
         const double velocity = velocity_branch[i];
-        const double specularity = 0.9;
+        const double specularity = 0.99;
         const double tau_boundary = (velocity / GRAPHENE_SAMPLE_LENGTH) * (1.0 - specularity) / (1.0 + specularity);
         tau_inv_branch[i] += tau_boundary;
     }
@@ -296,7 +296,7 @@ int main(int argc, char **argv)
     std::string infile(argv[1]);
     SymmetryCoordinates::CartesianPoint2<double> q = {std::stod(argv[2]), std::stod(argv[3])};
 
-    std::cout << "Q point is (" << q << ").\n";
+    // std::cout << "Q point is (" << q << ").\n";
 
     std::vector<SymmetryCoordinates::CartesianPoint2<double>> coord;
     coord.reserve(POINTS_HINT);
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
         }
         coord.push_back(cp);
     }
-    std::cout << "Read " << coord.size() << " grid points.\n";
+    // std::cout << "Read " << coord.size() << " grid points.\n";
 
     std::vector<double> velocity_branch(6);
     auto tau_inv_branch_splitting = IntegrateTauInverse<true, double>(q, coord, velocity_branch);
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
     }
 
     for (size_t i = 0; i < tau_inv_branch.size(); i++) {
-        std::cout << "tau_inv_branch[" << i << "] = " << tau_inv_branch[i] << '\n';
+        // std::cout << "tau_inv_branch[" << i << "] = " << tau_inv_branch[i] << '\n';
     }
 
     std::string filename(argv[4]);
